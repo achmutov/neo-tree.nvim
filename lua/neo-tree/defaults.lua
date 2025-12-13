@@ -441,7 +441,7 @@ local config = {
       --["C"] = "close_all_subnodes",
       ["z"] = "close_all_nodes",
       --["Z"] = "expand_all_nodes",
-      --["Z"] = "expand_all_subnodes",
+      --["Z"] = "expand_all_sibling_nodes",
       ["R"] = "refresh",
       ["a"] = {
         "add",

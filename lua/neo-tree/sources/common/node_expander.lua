@@ -8,8 +8,12 @@ local M = {}
 ---@param node table a node to expand
 ---@param state neotree.State current state of the source
 ---@return table discovered nodes that need to be loaded
-local function expand_loaded(node, state, prefetcher)
-  local function rec(current_node, to_load)
+---@param max_depth integer?
+local function expand_loaded(node, state, prefetcher, max_depth)
+  local function rec(current_node, to_load, depth)
+    if max_depth ~= nil and depth > max_depth then
+      return
+    end
     if prefetcher.should_prefetch(current_node) then
       log.trace("Node", current_node:get_id(), "not loaded, saving for later")
       table.insert(to_load, current_node)
@@ -22,7 +26,7 @@ local function expand_loaded(node, state, prefetcher)
       log.debug("Expanding childrens of", current_node:get_id())
       for _, child in ipairs(children) do
         if utils.is_expandable(child) then
-          rec(child, to_load)
+          rec(child, to_load, depth + 1)
         else
           log.trace("Child:", (child.name or ""), "is not expandable, skipping")
         end
@@ -31,7 +35,7 @@ local function expand_loaded(node, state, prefetcher)
   end
 
   local to_load = {}
-  rec(node, to_load)
+  rec(node, to_load, 0)
   return to_load
 end
 
@@ -40,12 +44,13 @@ end
 --- async method
 ---@param node table a node to expand
 ---@param state neotree.State current state of the source
-local function expand_and_load(node, state, prefetcher)
-  local to_load = expand_loaded(node, state, prefetcher)
+---@param max_depth integer?
+local function expand_and_load(node, state, prefetcher, max_depth)
+  local to_load = expand_loaded(node, state, prefetcher, max_depth)
   for _, _node in ipairs(to_load) do
     prefetcher.prefetch(state, _node)
     -- no need to handle results as prefetch is recursive
-    expand_loaded(_node, state, prefetcher)
+    expand_loaded(_node, state, prefetcher, max_depth)
   end
 end
 
@@ -55,7 +60,8 @@ end
 ---@param state neotree.State current state of the source
 ---@param node table a node to expand
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
-M.expand_directory_recursively = function(state, node, prefetcher)
+---@param max_depth integer?
+M.expand_directory_recursively = function(state, node, prefetcher, max_depth)
   log.debug("Expanding directory", node:get_id())
   prefetcher = prefetcher or M.default_prefetcher
   if not utils.is_expandable(node) then
@@ -67,9 +73,9 @@ M.expand_directory_recursively = function(state, node, prefetcher)
     local id = node:get_id()
     state.explicitly_opened_nodes[id] = true
     prefetcher.prefetch(state, node)
-    expand_loaded(node, state, prefetcher)
+    expand_loaded(node, state, prefetcher, max_depth)
   else
-    expand_and_load(node, state, prefetcher)
+    expand_and_load(node, state, prefetcher, max_depth)
   end
 end
 

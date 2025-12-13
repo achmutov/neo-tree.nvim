@@ -83,6 +83,10 @@ M.expand_all_subnodes = function(state, node)
   cc.expand_all_subnodes(state, node, fs.prefetcher)
 end
 
+M.expand_all_sibling_nodes = function(state, node)
+  cc.expand_all_sibling_nodes(state, node, fs.prefetcher)
+end
+
 ---Shows the filter input, which will filter the tree.
 ---@param state neotree.sources.filesystem.State
 M.filter_as_you_type = function(state)
