@@ -126,7 +126,8 @@ end
 ---Expand all nodes
 ---@param node table? A single node to expand (defaults to all root nodes)
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
-M.expand_all_nodes = function(state, node, prefetcher)
+---@param max_depth integer?
+M.expand_all_nodes = function(state, node, prefetcher, max_depth)
   local root_nodes = node and { node } or state.tree:get_nodes()
 
   renderer.position.set(state, nil)
@@ -134,7 +135,7 @@ M.expand_all_nodes = function(state, node, prefetcher)
   local task = function()
     for _, root in pairs(root_nodes) do
       log.debug("Expanding all nodes under", root:get_id())
-      node_expander.expand_directory_recursively(state, root, prefetcher)
+      node_expander.expand_directory_recursively(state, root, prefetcher, max_depth)
     end
   end
   async.run(task, function()
@@ -148,6 +149,15 @@ end
 ---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
 M.expand_all_subnodes = function(state, node, prefetcher)
   M.expand_all_nodes(state, node or state.tree:get_node(), prefetcher)
+end
+
+---Expand sibling nodes
+---@param node table? A single node to expand (defaults to node under the cursor)
+---@param prefetcher table? an object with two methods `prefetch(state, node)` and `should_prefetch(node) => boolean`
+M.expand_all_sibling_nodes = function(state, node, prefetcher)
+  local current_node = node or state.tree:get_node()
+  local parent_node = state.tree:get_node(current_node:get_parent_id())
+  M.expand_all_nodes(state, parent_node, prefetcher, 1)
 end
 
 ---@param callback function
