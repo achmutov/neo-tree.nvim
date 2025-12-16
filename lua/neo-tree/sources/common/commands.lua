@@ -767,13 +767,13 @@ M.preview = function(state)
 end
 
 M.revert_preview = function()
-  Preview.hide()
+  Preview.hide(true)
 end
 --
 -- Multi-purpose function to back out of whatever we are in
 M.cancel = function(state)
   if Preview.is_active() then
-    Preview.hide()
+    Preview.hide(true)
   else
     if state.current_position == "float" then
       renderer.close_all_floating_windows()

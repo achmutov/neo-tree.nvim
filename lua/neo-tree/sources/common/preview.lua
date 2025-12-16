@@ -157,8 +157,18 @@ function Preview:preview(bufnr, start_pos, end_pos)
 end
 
 ---Reverts the preview and inactivates it, restoring the preview window to its previous state.
-function Preview:revert()
+---@param cancel boolean|nil
+function Preview:revert(cancel)
   self.active = false
+  local preserve_window_state = false
+  if cancel ~= true then
+    for _, ev in ipairs(self.events) do
+      if ev.event.id == "preview-event" and ev.source == "document_symbols" then
+        preserve_window_state = true
+        break
+      end
+    end
+  end
   self:unsubscribe()
 
   if not renderer.is_window_valid(self.winid) then
@@ -186,7 +196,7 @@ function Preview:revert()
     return
   end
   self:setBuffer(bufnr)
-  if vim.api.nvim_win_is_valid(self.winid) then
+  if vim.api.nvim_win_is_valid(self.winid) and not preserve_window_state then
     vim.api.nvim_win_call(self.winid, function()
       vim.fn.winrestview(self.truth.view)
     end)
@@ -476,10 +486,11 @@ end
 
 local toggle_state = false
 
-Preview.hide = function()
+---@param cancel boolean|nil
+Preview.hide = function(cancel)
   toggle_state = false
   if instance then
-    instance:revert()
+    instance:revert(cancel)
   end
   instance = nil
 end
