@@ -41,7 +41,7 @@ local loc_less_than = function(a, b)
   if a[1] < b[1] then
     return true
   elseif a[1] == b[1] then
-    return a[2] <= b[2]
+    return a[2] < b[2]
   end
   return false
 end
@@ -94,6 +94,9 @@ local function parse_resp(resp_node, id, state, parent_search_path)
     local child_node = parse_resp(child, id .. "." .. i, state, search_path)
     table.insert(children, child_node)
   end
+  table.sort(children, function(a, b)
+    return loc_less_than(a.extra.position, b.extra.position)
+  end)
 
   ---@type neotree.SymbolNode
   local symbol_node = {
@@ -146,6 +149,9 @@ local on_lsp_resp = function(lsp_resp, state)
     for i, resp_node in ipairs(client_result) do
       table.insert(symbol_list, parse_resp(resp_node, #items .. "." .. i, state, "/"))
     end
+    table.sort(symbol_list, function(a, b)
+      return loc_less_than(a.extra.position, b.extra.position)
+    end)
 
     -- add the parsed response to the tree
     local splits = vim.split(bufname, "/")
